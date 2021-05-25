@@ -24,7 +24,7 @@ const io = new Server(server, {
 // Emit Events
 io.on('connect', (socket) => {
   console.log("a user connected")
-  socket.on('chat', ({message,person}) => {
+  socket.on('chat', ({ message, person }) => {
     console.log(`${person}:${message}`)
   })
 })
