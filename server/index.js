@@ -23,9 +23,15 @@ const io = new Server(server, {
 
 // Emit Events
 io.on('connect', (socket) => {
+
   console.log("a user connected")
-  socket.on('chat', ({ message, person }) => {
-    console.log(`${person}:${message}`)
+
+  socket.on('message', ({ name, message }) => {
+    io.emit("message", { name, message })
+  })
+
+  socket.on('disconnect', () => {
+    console.log("user left the chat")
   })
 })
 

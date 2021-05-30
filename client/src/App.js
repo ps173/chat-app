@@ -1,55 +1,74 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import io from "socket.io-client";
-import "../../node_modules/bulma/css/bulma.css";
 import "./App.css";
 
 function App() {
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
+  const [userState, setUserState] = useState({ message: "", name: "" })
+  const [chat, setChat] = useState([])
 
-  const handleNameChange = (e) => {
-    setName(e.target.value);
-  };
+  const socketRef = useRef(null)
 
-  const handleMessageChange = (e) => {
-    setMessage(e.target.value);
-  };
+  useEffect(() => {
+    socketRef.current = io.connect("http://localhost:5000")
+    socketRef.current.on("message", ({ name, message }) => {
+      setChat([...chat, { name, message }])
+    })
+    return () => socketRef.current.disconnect()
+  }, [chat])
 
-  const handleClick = (e) => {
-    e.preventDefault();
-    let socket = io.connect("http://localhost:5000/");
-    socket.on("connect", () => {
-      if (message !== "") {
-        socket.emit("chat", { message: message, person: name });
-      }
-    });
-  };
+
+  const onTextChange = (e) => {
+    console.log(e.target.value);
+    setUserState({ ...userState, [e.target.name]: e.target.value })
+  }
+
+  const onMessageSubmit = (e) => {
+    const { name, message } = userState
+    socketRef.current.emit("message", { name, message })
+    e.preventDefault()
+    setUserState({ message: "", name })
+  }
+
 
   return (
-    <form className="form container my-6">
-      <label className="has-info" htmlFor="name">
-        Name
-      </label>
-      <input
-        id="name"
-        placeholder="enter your name here"
-        value={name}
-        className="input"
-        onChange={handleNameChange}
-      />
-      <label htmlFor="message"> Message </label>
-      <input
-        id="message"
-        value={message}
-        placeholder="enter your message here"
-        onChange={handleMessageChange}
-        className="input"
-      />
-      <hr />
-      <button type="submit" className="button is-info" onClick={handleClick}>
-        Submit
-      </button>
-    </form>
+    <>
+      <form onSubmit={onMessageSubmit}>
+        <label htmlFor="name">
+          Name
+        </label>
+        <input
+          id="name"
+          name="name"
+          placeholder="enter your name here"
+          value={userState.name}
+          onChange={(e) => onTextChange(e)}
+        />
+        <label htmlFor="message"> Message </label>
+        <input
+          id="message"
+          name="message"
+          placeholder="enter your message here"
+          value={userState.message}
+          onChange={(e) => onTextChange(e)}
+        />
+        <hr />
+        <button type="submit">
+          Submit
+        </button>
+      </form>
+      <div>
+        <h2>Messages Log</h2>
+        {
+          chat.map(({ name, message }, index) => (
+            <div key={index}>
+              <h3>
+                {name}: <span>{message}</span>
+              </h3>
+            </div>
+          ))
+        }
+      </div>
+    </>
   );
 }
 
